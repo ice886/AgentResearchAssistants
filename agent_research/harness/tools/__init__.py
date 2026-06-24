@@ -9,6 +9,13 @@ from .registry import (
     ToolValidationError,
     make_run_code_tool,
 )
+from .submission import (
+    make_submit_code_tool,
+    make_submit_lit_entries_tool,
+    make_submit_paper_tool,
+    make_submit_plan_tool,
+    make_submit_review_tool,
+)
 
 __all__ = [
     "ToolAuthorizationError",
@@ -18,4 +25,9 @@ __all__ = [
     "ToolValidationError",
     "bootstrap_registry",
     "make_run_code_tool",
+    "make_submit_code_tool",
+    "make_submit_lit_entries_tool",
+    "make_submit_paper_tool",
+    "make_submit_plan_tool",
+    "make_submit_review_tool",
 ]

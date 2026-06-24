@@ -139,19 +139,28 @@ def _execute_tools(
 def _to_agent_result(response: anthropic.types.Message) -> AgentResult:
     text_parts: list[str] = []
     tool_calls: list[str] = []
+    last_tool_input: dict[str, Any] = {}
+
     for block in response.content:
         if block.type == "text":
             text_parts.append(block.text)
         elif block.type == "tool_use":
             tool_calls.append(block.name)
+            # 捕获最后一个工具调用的 input 作为结构化输出
+            last_tool_input = dict(block.input) if block.input else {}
 
     content = "\n".join(text_parts)
-    output: dict[str, Any] = {}
-    if content.strip().startswith("{"):
+
+    # 优先使用 tool_use.input（强制结构化），其次尝试解析文本 JSON
+    if last_tool_input:
+        output = last_tool_input
+    elif content.strip().startswith("{"):
         try:
             output = json.loads(content)
         except (json.JSONDecodeError, ValueError):
-            pass
+            output = {}
+    else:
+        output = {}
 
     return AgentResult(
         content=content,

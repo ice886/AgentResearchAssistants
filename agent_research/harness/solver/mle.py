@@ -92,9 +92,13 @@ class MLESolver(SolverBase):
     # ----------------------------------------------------------------- 内部 -- #
 
     def _propose(self, code: str, feedback: str) -> EditCommand:
+        goal = getattr(self, "_propose_goal", None) or (
+            "Improve the ML code to increase the score metric. "
+            "You MUST call the submit_code tool with your improved code."
+        )
         result = self._agent.run(
             AgentTask(
-                goal="Improve the ML code to increase the score metric.",
+                goal=goal,
                 context={"current_code": code, "feedback": feedback},
             )
         )

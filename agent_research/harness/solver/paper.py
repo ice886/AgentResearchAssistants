@@ -80,9 +80,13 @@ class PaperSolver(SolverBase):
         )
 
     def _propose(self, draft: str, feedback: str) -> EditCommand:
+        goal = getattr(self, "_propose_goal", None) or (
+            "Improve the paper draft based on reviewer feedback. "
+            "You MUST call the submit_paper tool with the improved sections."
+        )
         result = self._author.run(
             AgentTask(
-                goal="Improve the paper draft based on reviewer feedback.",
+                goal=goal,
                 context={"current_draft": draft, "feedback": feedback},
             )
         )
@@ -92,15 +96,27 @@ class PaperSolver(SolverBase):
                 data = json.loads(result.content)
             except (json.JSONDecodeError, ValueError):
                 return EditCommand(code=draft, description="parse_error")
+        # submit_paper returns {"sections": {...}, "bib_refs": [...]}
+        # convert to EditCommand by joining sections as LaTeX text
+        if "sections" in data and isinstance(data["sections"], dict):
+            latex = "\n\n".join(
+                f"\\section{{{k.title()}}}\n{v}"
+                for k, v in data["sections"].items()
+            )
+            return EditCommand(code=latex, description=str(data.get("bib_refs", "")))
         try:
             return EditCommand.model_validate(data)
         except Exception:
             return EditCommand(code=draft, description="parse_error")
 
     def _evaluate(self, draft: str) -> tuple[float | None, str]:
+        goal = getattr(self, "_evaluate_goal", None) or (
+            "Score the paper draft on quality, clarity, originality, significance. "  # noqa: E501
+            "You MUST call the submit_review tool with your scores."
+        )
         result = self._reviewer.run(
             AgentTask(
-                goal="Score the paper draft on quality, clarity, originality, significance.",  # noqa: E501
+                goal=goal,
                 context={"draft": draft},
             )
         )
