@@ -1,5 +1,6 @@
 """工具注册与按角色授权。"""
 
+from .builtin import bootstrap_registry
 from .registry import (
     ToolAuthorizationError,
     ToolRegistry,
@@ -15,5 +16,6 @@ __all__ = [
     "ToolRegistryError",
     "ToolSpec",
     "ToolValidationError",
+    "bootstrap_registry",
     "make_run_code_tool",
 ]
