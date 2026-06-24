@@ -103,10 +103,10 @@ def _run_pipeline(
     else:
         gate = CheckpointGate(enabled=True, decision_fn=_interactive_gate)
 
-    orch = Orchestrator(bb, gate)
+    paths = settings.run_paths(run_id)
+    orch = Orchestrator(bb, gate, run_paths=paths)
     result = orch.run(graph)
 
-    paths = settings.run_paths(run_id)
     _save_budget(budget, paths)
     _export_artifacts(bb, paths)
 
