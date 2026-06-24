@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict
@@ -16,6 +17,7 @@ from .base import SolverBase, SolveResult
 
 _CODE_ID = "code.main"
 _RUNS_ID = "runs.history"
+log = logging.getLogger(__name__)
 
 
 class EditCommand(BaseModel):
@@ -50,8 +52,12 @@ class MLESolver(SolverBase):
         art_id: str | None = None
 
         for i in range(1, self.max_iters + 1):
+            log.info("[MLESolver] iter %d/%d — proposing...", i, self.max_iters)
             edit = self._propose(best_code, feedback)
+            log.info("[MLESolver] iter %d — evaluating (%d chars)...", i, len(edit.code))  # noqa: E501
             score, stdout, stderr = self._evaluate(edit.code)
+            short_err = stderr[:120] if stderr else ""
+            log.info("[MLESolver] iter %d — score=%s  stderr=%s", i, score, short_err)
 
             if score is not None and (best_score is None or score > best_score):
                 best_code = edit.code

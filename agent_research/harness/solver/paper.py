@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import Any
 
 from ...agents.base import AgentTask, RoleAgent
@@ -19,6 +20,7 @@ from .mle import EditCommand
 
 _PAPER_ID = "paper.main"
 _REVIEWS_ID = "reviews.main"
+log = logging.getLogger(__name__)
 
 
 class PaperSolver(SolverBase):
@@ -46,8 +48,11 @@ class PaperSolver(SolverBase):
         art_id: str | None = None
 
         for i in range(1, self.max_iters + 1):
+            log.info("[PaperSolver] iter %d/%d — proposing draft...", i, self.max_iters)
             edit = self._propose(best_draft, feedback)
+            log.info("[PaperSolver] iter %d — requesting review...", i)
             score, comments = self._evaluate(edit.code)
+            log.info("[PaperSolver] iter %d — score=%s", i, score)
 
             if score is not None and (best_score is None or score > best_score):
                 best_draft = edit.code

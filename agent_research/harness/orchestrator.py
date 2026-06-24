@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from pydantic import BaseModel, ConfigDict
 
 from ..workflow.pipeline import StateGraph
@@ -11,6 +13,7 @@ from .enums import RoleName, Verdict
 from .models import Artifact, Decision, DecisionLog
 
 _DECISIONS_ID = "decisions.main"
+log = logging.getLogger(__name__)
 
 
 class RunResult(BaseModel):
@@ -36,19 +39,24 @@ class Orchestrator:
         for node in graph.nodes:
             if node.is_checkpoint:
                 if node.id in approved:
+                    log.info("[checkpoint] %s — skipped (already approved)", node.id)
                     continue
+                log.info("[checkpoint] %s — waiting for decision...", node.id)
                 decision = self._gate.gate(node.id)
                 self._record_decision(decision)
                 decisions.append(decision)
+                log.info("[checkpoint] %s — verdict: %s", node.id, decision.verdict)
                 if decision.verdict == Verdict.REJECT:
                     return RunResult(
                         completed_nodes=completed, decisions=decisions, aborted=True
                     )
             else:
+                log.info("[phase] %s — starting", node.id)
                 if node.handler is not None:
                     node.handler()
                 completed.append(node.id)
                 self._bb.snapshot()
+                log.info("[phase] %s — done", node.id)
 
         return RunResult(completed_nodes=completed, decisions=decisions)
 

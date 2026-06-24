@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from typing import Any
 
@@ -10,6 +11,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from ..agents.base import AgentTask, RoleAgent
 from .enums import Intent, RoleName
 from .models import Message
+
+log = logging.getLogger(__name__)
 
 
 class Transcript(BaseModel):
@@ -56,6 +59,10 @@ class MessageBus:
         for turn in range(max_turns):
             agent = participants[turn % n]
             next_role = participants[(turn + 1) % n].role
+            log.info(
+                "[dialogue] turn %d/%d  agent=%s  topic=%s",
+                turn + 1, max_turns, agent.role, topic,
+            )
             context: dict[str, Any] = {"topic": topic}
             if last_msg is not None:
                 context["last_message"] = last_msg.model_dump(mode="json")
@@ -67,8 +74,10 @@ class MessageBus:
             self.send(msg)
             messages.append(msg)
             last_msg = msg
+            log.info("[dialogue] turn %d — intent=%s", turn + 1, msg.intent)
 
             if converge_fn(msg):
+                log.info("[dialogue] converged at turn %d", turn + 1)
                 return Transcript(messages=messages, converged=True, turns=turn + 1)
 
         return Transcript(messages=messages, converged=False, turns=max_turns)
