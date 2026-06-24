@@ -1,0 +1,6 @@
+"""Solver 层：代码生成-评估-选择闭环。"""
+
+from .base import SolverBase, SolveResult
+from .mle import EditCommand, MLESolver
+
+__all__ = ["EditCommand", "MLESolver", "SolveResult", "SolverBase"]
