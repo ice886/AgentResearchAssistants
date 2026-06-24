@@ -117,6 +117,7 @@ class Settings(BaseSettings):
     docker: DockerConfig = Field(default_factory=DockerConfig)
     models: ModelConfig = Field(default_factory=ModelConfig)
     anthropic_api_key: SecretStr | None = None
+    anthropic_base_url: str | None = None  # 中转站地址，如 https://xxx.com/v1
 
     def run_paths(self, run_id: str) -> RunPaths:
         return RunPaths(root=self.runs_dir / run_id)

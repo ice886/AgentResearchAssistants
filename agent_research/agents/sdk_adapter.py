@@ -38,14 +38,18 @@ class AnthropicSDKClient:
             {"role": "user", "content": _build_user_content(invocation.task)}
         ]
 
+        # 中转站通常不支持 thinking 参数，原生 Anthropic API 才支持
+        use_thinking = self._settings.anthropic_base_url is None
+
         for _ in range(self.max_tool_iters + 1):
             kwargs: dict[str, Any] = {
                 "model": invocation.model,
                 "max_tokens": 8192,
                 "system": invocation.system_prompt,
                 "messages": messages,
-                "thinking": {"type": "adaptive"},
             }
+            if use_thinking:
+                kwargs["thinking"] = {"type": "adaptive"}
             if tools:
                 kwargs["tools"] = tools
 
@@ -68,7 +72,11 @@ class AnthropicSDKClient:
         if self._client is None:
             key = self._settings.anthropic_api_key
             api_key = key.get_secret_value() if key else None
-            self._client = anthropic.Anthropic(api_key=api_key)
+            base_url = self._settings.anthropic_base_url
+            if base_url:
+                self._client = anthropic.Anthropic(api_key=api_key, base_url=base_url)
+            else:
+                self._client = anthropic.Anthropic(api_key=api_key)
         return self._client
 
 
