@@ -20,11 +20,11 @@ from .harness.enums import RoleName
 class ResourceLimits(BaseModel):
     """沙箱容器与全局预算限额。"""
 
-    container_cpus: float = 2.0
-    container_mem_mb: int = 4096
-    container_timeout_s: int = 600
-    max_concurrent_containers: int = 2
-    token_budget: int = 2_000_000
+    container_cpus: float = Field(default=2.0, gt=0)
+    container_mem_mb: int = Field(default=4096, gt=0)
+    container_timeout_s: int = Field(default=600, gt=0)
+    max_concurrent_containers: int = Field(default=2, gt=0)
+    token_budget: int = Field(default=2_000_000, gt=0)
 
 
 class DockerConfig(BaseModel):
@@ -33,6 +33,9 @@ class DockerConfig(BaseModel):
     base_image_tag: str = "agent-research/base:latest"
     network_policy: str = "none"  # none | whitelist
     run_as_non_root: bool = True
+    non_root_user: str = "1000:1000"
+    workdir: str = "/workspace"
+    idle_command: str = "sleep infinity"
 
 
 class ModelConfig(BaseModel):

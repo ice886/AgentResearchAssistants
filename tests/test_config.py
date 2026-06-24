@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+from pydantic import ValidationError
+
 from agent_research.config import ModelConfig, RunPaths, Settings
 from agent_research.harness.enums import RoleName
 
@@ -22,6 +25,12 @@ def test_env_override_scalar_and_nested(monkeypatch):
     s = Settings()
     assert s.runs_dir == Path("/tmp/myruns")
     assert s.limits.container_cpus == 8.0
+
+
+def test_resource_limits_must_be_positive(monkeypatch):
+    monkeypatch.setenv("AR_LIMITS__MAX_CONCURRENT_CONTAINERS", "0")
+    with pytest.raises(ValidationError):
+        Settings()
 
 
 def test_env_file_loaded(tmp_path, monkeypatch):
