@@ -41,6 +41,10 @@ class AnthropicSDKClient:
         # 中转站通常不支持 thinking 参数，原生 Anthropic API 才支持
         use_thinking = self._settings.anthropic_base_url is None
 
+        # 跨轮次记录最后一次工具调用的 input（tool_use 发生在中间轮，end_turn 在最后轮）
+        last_tool_input: dict[str, Any] = {}
+        last_tool_name: str = ""
+
         for _ in range(self.max_tool_iters + 1):
             kwargs: dict[str, Any] = {
                 "model": invocation.model,
@@ -60,13 +64,18 @@ class AnthropicSDKClient:
                 break
 
             if response.stop_reason == "tool_use":
+                # 记录这轮的 tool_use input（可能被 end_turn 轮覆盖，保留最后一次）
+                for block in response.content:
+                    if block.type == "tool_use":
+                        last_tool_input = dict(block.input) if block.input else {}
+                        last_tool_name = block.name
                 tool_results = _execute_tools(response, invocation)
                 messages.append({"role": "assistant", "content": response.content})
                 messages.append({"role": "user", "content": tool_results})
             else:
                 break
 
-        return _to_agent_result(response)
+        return _to_agent_result(response, last_tool_input, last_tool_name)
 
     def _get_client(self) -> anthropic.Anthropic:
         if self._client is None:
@@ -136,24 +145,35 @@ def _execute_tools(
     return results
 
 
-def _to_agent_result(response: anthropic.types.Message) -> AgentResult:
+def _to_agent_result(
+    response: anthropic.types.Message,
+    last_tool_input: dict[str, Any] | None = None,
+    last_tool_name: str = "",
+) -> AgentResult:
     text_parts: list[str] = []
     tool_calls: list[str] = []
-    last_tool_input: dict[str, Any] = {}
+    final_tool_input: dict[str, Any] = {}
 
+    # 先看最后一轮 response 里有没有 tool_use（有些 model 在 end_turn 前还会调工具）
     for block in response.content:
         if block.type == "text":
             text_parts.append(block.text)
         elif block.type == "tool_use":
             tool_calls.append(block.name)
-            # 捕获最后一个工具调用的 input 作为结构化输出
-            last_tool_input = dict(block.input) if block.input else {}
+            final_tool_input = dict(block.input) if block.input else {}
 
     content = "\n".join(text_parts)
 
-    # 优先使用 tool_use.input（强制结构化），其次尝试解析文本 JSON
-    if last_tool_input:
-        output = last_tool_input
+    # 优先用跨轮次捕获的 tool_input（关键修复：tool_use 在中间轮，end_turn 在最后轮）
+    accumulated_tool_input = last_tool_input or {}
+    if accumulated_tool_input and not final_tool_input:
+        final_tool_input = accumulated_tool_input
+        if last_tool_name and last_tool_name not in tool_calls:
+            tool_calls.append(last_tool_name)
+
+    # 确定 output：工具输入 > 文本 JSON > 空
+    if final_tool_input:
+        output = final_tool_input
     elif content.strip().startswith("{"):
         try:
             output = json.loads(content)

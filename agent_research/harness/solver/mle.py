@@ -116,7 +116,11 @@ class MLESolver(SolverBase):
     def _evaluate(self, code: str) -> tuple[float | None, str, str]:
         handle = self._sandbox.spawn()
         try:
-            res = self._sandbox.run(handle, ["python3", "-c", code])
+            # 写入临时文件再执行，避免 -c 对长代码的引号/换行问题
+            write_cmd = ["python3", "-c",
+                         f"open('/tmp/_exp.py','w').write({code!r})"]
+            self._sandbox.run(handle, write_cmd)
+            res = self._sandbox.run(handle, ["python3", "/tmp/_exp.py"])
         finally:
             self._sandbox.teardown(handle)
         return _parse_score(res.stdout), res.stdout, res.stderr
