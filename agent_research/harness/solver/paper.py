@@ -172,7 +172,20 @@ class PaperSolver(SolverBase):
 def _parse_review(output: dict[str, Any]) -> tuple[float | None, str]:
     """从 reviewer output 提取平均分与评语。"""
     comments = str(output.get("comments", ""))
+
+    # 嵌套格式：{"dims": {"quality": ...}}
     dims_raw = output.get("dims")
+    _DIMS = ("quality", "clarity", "originality", "significance")
+    if not isinstance(dims_raw, dict):
+        # 扁平格式：submit_review handler 直接返回 {quality, clarity, ...}
+        if all(k in output for k in _DIMS):
+            dims_raw = {
+                "quality": output["quality"],
+                "clarity": output["clarity"],
+                "originality": output["originality"],
+                "significance": output["significance"],
+            }
+
     if isinstance(dims_raw, dict):
         try:
             dims = ReviewDims.model_validate(dims_raw)
@@ -182,6 +195,7 @@ def _parse_review(output: dict[str, Any]) -> tuple[float | None, str]:
             return avg, comments
         except Exception:
             pass
+
     score = output.get("score")
     if score is not None:
         try:
