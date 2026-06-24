@@ -5,8 +5,10 @@
 ## 当前模块
 
 - `agent_research.config`：集中配置路径、资源限额、Docker 与模型配置。
+- `agent_research.agents.base`：`RoleAgent` 封装，按角色注入模型、prompt 与授权工具。
 - `agent_research.harness.blackboard`：版本化 Blackboard，提供 CAS、snapshot/restore 与上下文切片。
 - `agent_research.harness.sandbox`：Docker `SandboxManager`，提供沙箱起停、CPU/内存限额、默认断网、非 root、命令超时与 OOM 结果映射。
+- `agent_research.harness.tools`：`ToolRegistry` 工具注册与按角色授权，`run_code` 强制路由到 SandboxManager。
 
 ## 验证
 
