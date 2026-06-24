@@ -2,5 +2,6 @@
 
 from .base import SolverBase, SolveResult
 from .mle import EditCommand, MLESolver
+from .paper import PaperSolver
 
-__all__ = ["EditCommand", "MLESolver", "SolveResult", "SolverBase"]
+__all__ = ["EditCommand", "MLESolver", "PaperSolver", "SolveResult", "SolverBase"]
