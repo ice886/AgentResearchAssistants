@@ -15,7 +15,7 @@ from .harness.budget import BudgetController
 from .harness.checkpoint import CheckpointGate
 from .harness.enums import RoleName, Verdict
 from .harness.messagebus import MessageBus
-from .harness.models import Decision
+from .harness.models import CodeArtifact, Decision, PaperDraft
 from .harness.orchestrator import Orchestrator
 from .harness.sandbox import SandboxManager
 
@@ -108,6 +108,7 @@ def _run_pipeline(
 
     paths = settings.run_paths(run_id)
     _save_budget(budget, paths)
+    _export_artifacts(bb, paths)
 
     if result.aborted:
         log.warning("运行被中止（REJECT 决议）")
@@ -146,6 +147,31 @@ def _save_budget(budget: BudgetController, paths: Any) -> None:
         )
     except Exception:
         pass
+
+
+def _export_artifacts(bb: Blackboard, paths: Any) -> None:
+    """把 Blackboard 里的文件制品导出到 runs/<run_id>/ 子目录。"""
+    try:
+        if bb.exists("code.main"):
+            paths.code_dir.mkdir(exist_ok=True)
+            art = bb.get("code.main")
+            assert isinstance(art.payload, CodeArtifact)
+            for fname, content in art.payload.files.items():
+                (paths.code_dir / fname).write_text(content, encoding="utf-8")
+            log.info("exported code.main → %s", paths.code_dir)
+    except Exception as exc:
+        log.warning("export code failed: %s", exc)
+
+    try:
+        if bb.exists("paper.main"):
+            paths.paper_dir.mkdir(exist_ok=True)
+            art = bb.get("paper.main")
+            assert isinstance(art.payload, PaperDraft)
+            for k, v in art.payload.sections.items():
+                (paths.paper_dir / f"{k}.tex").write_text(v, encoding="utf-8")
+            log.info("exported paper.main → %s", paths.paper_dir)
+    except Exception as exc:
+        log.warning("export paper failed: %s", exc)
 
 
 if __name__ == "__main__":
