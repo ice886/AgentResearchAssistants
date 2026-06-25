@@ -13,6 +13,52 @@
 - `agent_research.harness.solver.mle`：`MLESolver` 代码迭代求解，在沙箱内运行并评分。
 - `agent_research.workflow`：三阶段四检查点 pipeline（lit_review → plan → experiment → paper）。
 
+## 快速开始
+
+**安装依赖**
+
+```bash
+pip install -e .
+cp .env.example .env  # 填入 ANTHROPIC_API_KEY
+```
+
+**启动新实验**
+
+```bash
+# 交互模式（每个检查点暂停等待人工确认）
+python -m agent_research run --idea "Compare CoT vs ReAct on GSM8K"
+
+# 全自动模式（跳过所有检查点）
+python -m agent_research run --idea "Compare CoT vs ReAct on GSM8K" --auto
+
+# 指定 run_id
+python -m agent_research run --idea "..." --run-id my-exp-01
+```
+
+**恢复中断的实验**
+
+```bash
+python -m agent_research resume --run-id <run_id>
+python -m agent_research resume --run-id <run_id> --auto
+```
+
+**制品输出**
+
+```
+runs/<run_id>/
+├── blackboard.json      # 全量共享状态快照
+├── budget.json          # token 用量报告
+├── code/main.py         # 生成的实验代码
+├── paper/main.tex       # 生成的 LaTeX 论文
+└── logs/phases.json     # 阶段执行日志
+```
+
+编译论文：
+
+```bash
+pdflatex runs/<run_id>/paper/main.tex
+```
+
 ## 验证
 
 ```bash
