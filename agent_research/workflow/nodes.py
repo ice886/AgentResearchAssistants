@@ -241,11 +241,17 @@ def _paper_handler(
         reviewer_with_tool = _with_extra_tools(reviewer, [make_submit_review_tool()])
 
         initial_latex = (
+            "\\documentclass{article}\n"
+            "\\usepackage[utf8]{inputenc}\n"
+            "\\usepackage{amsmath}\n"
+            "\\usepackage{booktabs}\n\n"
+            "\\begin{document}\n\n"
             "\\section{Introduction}\n"
             f"% Research idea: {idea}\n"
             "\\section{Methodology}\n"
             "\\section{Experiments}\n"
-            "\\section{Conclusion}\n"
+            "\\section{Conclusion}\n\n"
+            "\\end{document}"
         )
 
         solver = PaperSolver(

@@ -99,9 +99,30 @@ class PaperSolver(SolverBase):
         # submit_paper returns {"sections": {...}, "bib_refs": [...]}
         # convert to EditCommand by joining sections as LaTeX text
         if "sections" in data and isinstance(data["sections"], dict):
-            latex = "\n\n".join(
+            body = "\n\n".join(
                 f"\\section{{{k.title()}}}\n{v}"
                 for k, v in data["sections"].items()
+            )
+            bib_refs = data.get("bib_refs") or []
+            bib_items = "\n".join(
+                f"\\bibitem{{{ref.get('key', i)}}} {ref.get('text', '')}"
+                if isinstance(ref, dict)
+                else f"\\bibitem{{ref{i}}} {ref}"
+                for i, ref in enumerate(bib_refs)
+            )
+            bib_block = (
+                f"\n\n\\begin{{thebibliography}}{{99}}\n{bib_items}\n\\end{{thebibliography}}"
+                if bib_items else ""
+            )
+            latex = (
+                "\\documentclass{article}\n"
+                "\\usepackage[utf8]{inputenc}\n"
+                "\\usepackage{amsmath}\n"
+                "\\usepackage{booktabs}\n\n"
+                "\\begin{document}\n\n"
+                + body
+                + bib_block
+                + "\n\n\\end{document}"
             )
             return EditCommand(code=latex, description=str(data.get("bib_refs", "")))
         try:
